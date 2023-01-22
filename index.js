@@ -3,7 +3,14 @@ window.addEventListener('DOMContentLoaded', () => {
     faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
     faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
     faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
-  ]).then(() => {});
+  ]).then(() => {
+    document
+      .getElementById('get__reference')
+      .addEventListener('change', getReference);
+    document
+      .getElementById('get__files')
+      .addEventListener('change', uploadPicture);
+  });
 });
 
 const referenceFile = [];
@@ -147,8 +154,3 @@ const compareImage = async () => {
     console.log(e);
   }
 };
-
-document
-  .getElementById('get__reference')
-  .addEventListener('change', getReference);
-document.getElementById('get__files').addEventListener('change', uploadPicture);
