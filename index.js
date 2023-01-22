@@ -1,8 +1,8 @@
 window.addEventListener('DOMContentLoaded', () => {
   Promise.all([
-    faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-    faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
+    faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
+    faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+    faceapi.nets.faceLandmark68TinyNet.loadFromUri('./models'),
   ]).then(() => {
     document
       .getElementById('get__reference')
