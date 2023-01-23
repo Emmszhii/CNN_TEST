@@ -14,12 +14,29 @@
     <div class="container">
       <label for="reference">Reference image</label>
       <input type="file" name="reference" id="get__reference" multiple />
-      <input type="checkbox" name="one__person" id="one__person__checkbox" />
-      <label for="one__person">One person with many reference</label>
     </div>
     <div class="container">
       <label for="query">Query image</label>
       <input type="file" name="query" id="get__files" multiple />
+    </div>
+    <div class="container checkboxes">
+      <div class="container">
+        <input
+          type="checkbox"
+          name="one__person"
+          id="one__person__checkbox"
+          checked
+        />
+        <label for="one__person">One person reference different query</label>
+      </div>
+      <div class="container">
+        <input
+          type="checkbox"
+          name="diff__person"
+          id="diff__person__checkbox"
+        />
+        <label for="diff__person">Different references different query</label>
+      </div>
     </div>
   </body>
 </html>
