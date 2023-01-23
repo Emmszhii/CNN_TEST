@@ -5,14 +5,21 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CNN Confusion Matrix</title>
+    <link rel="stylesheet" href="index.css" />
     <script defer src="faceApi/face-api.js"></script>
     <script defer src="faceApi/face-api.min.js"></script>
     <script type="module" src="index.js"></script>
   </head>
   <body>
-    <label for="reference">Reference</label>
-    <input type="file" name="reference" id="get__reference" multiple />
-    <label for="query">Query</label>
-    <input type="file" name="query" id="get__files" multiple />
+    <div class="container">
+      <label for="reference">Reference image</label>
+      <input type="file" name="reference" id="get__reference" multiple />
+      <input type="checkbox" name="one__person" id="one__person__checkbox" />
+      <label for="one__person">One person with many reference</label>
+    </div>
+    <div class="container">
+      <label for="query">Query image</label>
+      <input type="file" name="query" id="get__files" multiple />
+    </div>
   </body>
 </html>

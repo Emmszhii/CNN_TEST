@@ -1,44 +1,116 @@
-window.addEventListener('DOMContentLoaded', () => {
-  Promise.all([
-    faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
-    faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
-    faceapi.nets.faceLandmark68TinyNet.loadFromUri('./models'),
-  ]).then(() => {
-    document
-      .getElementById('get__reference')
-      .addEventListener('change', getReference);
-    document
-      .getElementById('get__files')
-      .addEventListener('change', uploadPicture);
-  });
+const onePersonCheckbox = document.getElementById('one__person__checkbox');
+const options = new faceapi.TinyFaceDetectorOptions({
+  inputSize: 128,
+  scoreThreshold: 0.5,
 });
-
 const referenceFile = [];
 const queryFiles = [];
+const referenceDescriptor = [];
+const queryDescriptor = [];
 
-const getReference = (event) => {
+const getReferenceFiles = (event) => {
   const file = event.target.files;
   if (!file) return;
   referenceFile.length = 0;
+  referenceDescriptor.length = 0;
   for (let i = 0; i < file.length; i++) {
     referenceFile.push(file[i]);
   }
 };
 
-const uploadPicture = (event) => {
+const getQueryFiles = async (event) => {
   const fileList = event.target.files;
   if (!fileList) return;
   queryFiles.length = 0;
+  queryDescriptor.length = 0;
   for (let i = 0; i < fileList.length; i++) {
     queryFiles.push(fileList[i]);
   }
   // logFiles();
-  if (referenceFile.length > 0 && queryFiles.length > 0) {
+  if (onePersonCheckbox.checked) {
+    await onePersonImageHandler();
+  } else if (referenceFile.length > 0 && queryFiles.length > 0) {
     compareImage();
   } else {
-    console.log(`Please check if there is no faces uploaded`);
+    console.log(`Please check if there is no file uploaded`);
     console.log(referenceFile);
     console.log(queryFiles);
+  }
+};
+
+const setRefDescriptor = async () => {
+  for (let i = 0; i < referenceFile.length; i++) {
+    const img = new Image();
+    img.src = URL.createObjectURL(referenceFile[i]);
+
+    const detection = await faceapi
+      .detectSingleFace(img, options)
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    if (detection > 0)
+      return console.log(`There are too many faces. Please put only one`);
+    if (!detection)
+      return console.log(`There are no face detected in the image`);
+    console.log(
+      `Reference Image ${referenceFile[i].name} ${i + 1} face descriptor added`
+    );
+    referenceDescriptor.push({
+      name: referenceFile[i].name,
+      descriptor: detection.descriptor,
+    });
+  }
+};
+const setQueryDescriptor = async () => {
+  for (let i = 0; i < queryFiles.length; i++) {
+    const img = new Image();
+    img.src = URL.createObjectURL(queryFiles[i]);
+
+    const detection = await faceapi
+      .detectSingleFace(img, options)
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    if (detection > 0)
+      return console.log(`There are too many faces. Please put only one`);
+    if (!detection)
+      return console.log(`There are no face detected in the image`);
+
+    console.log(
+      `Query Image ${queryFiles[i].name} ${i + 1} face descriptor added`
+    );
+    queryDescriptor.push({
+      name: queryFiles[i].name,
+      descriptor: detection.descriptor,
+    });
+  }
+};
+
+const onePersonCompare = async () => {
+  const refArrDescriptor = referenceDescriptor.map((val) => val.descriptor);
+  const labelRefPerson = new faceapi.LabeledFaceDescriptors(
+    referenceDescriptor[0].name,
+    refArrDescriptor
+  );
+  const faceMatcher = new faceapi.FaceMatcher([labelRefPerson]);
+  console.log(faceMatcher);
+  for (let i = 0; i < queryDescriptor.length; i++) {
+    const bestMatch = faceMatcher.findBestMatch(queryDescriptor[i].descriptor);
+    console.log(
+      `Reference is ${bestMatch.toString()} to query ${
+        queryDescriptor[i].name
+      } ${i + 1}`
+    );
+  }
+};
+
+const onePersonImageHandler = async () => {
+  try {
+    await setRefDescriptor();
+    await setQueryDescriptor();
+    await onePersonCompare();
+  } catch (e) {
+    console.log(e);
   }
 };
 
@@ -52,10 +124,6 @@ const logFiles = () => {
 };
 
 const setDescriptor = async (arr, option) => {
-  const options = new faceapi.TinyFaceDetectorOptions({
-    inputSize: 128,
-    scoreThreshold: 0.5,
-  });
   for (let i = 0; i < arr.length; i++) {
     const img = new Image();
     img.src = URL.createObjectURL(arr[i]);
@@ -188,3 +256,18 @@ const compareImage = async () => {
     console.log(e);
   }
 };
+
+window.addEventListener('DOMContentLoaded', () => {
+  Promise.all([
+    faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
+    faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+    faceapi.nets.faceLandmark68TinyNet.loadFromUri('./models'),
+  ]).then(() => {
+    document
+      .getElementById('get__reference')
+      .addEventListener('change', getReferenceFiles);
+    document
+      .getElementById('get__files')
+      .addEventListener('change', getQueryFiles);
+  });
+});
