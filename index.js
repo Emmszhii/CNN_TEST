@@ -104,11 +104,15 @@ const compareDescriptor = async (refArr, queryArr) => {
       );
       if (distance <= 0.43) {
         console.log(
-          `Reference Image and Query Image ${i + 1}: is the same person`
+          `Reference Image and Query Image ${
+            i + 1
+          }: is the same person with the distance of ${distance}`
         );
       } else {
         console.log(
-          `Reference Image and Query Image ${i + 1}: is the NOT same person`
+          `Reference Image and Query Image ${
+            i + 1
+          }: is the NOT same person with the distance of ${distance}`
         );
       }
     }
