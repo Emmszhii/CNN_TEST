@@ -69,7 +69,7 @@ const setDescriptor = async (arr, option) => {
         console.log(`Reference Image ${i + 1}: ${arr[i].name} face invalid`);
       } else {
         console.log(
-          `Reference Image ${i + 1}: ${arr[0].name} descriptor Added `
+          `Reference Image ${i + 1}: ${arr[i].name} descriptor Added `
         );
         arr[i].descriptor = image.descriptor;
       }
@@ -85,32 +85,27 @@ const setDescriptor = async (arr, option) => {
   }
   console.log(arr);
 };
+
 const compareDescriptor = async (refArr, queryArr) => {
   const refDescriptor = [];
 
   refArr.map((item, i) => {
     if (item.descriptor) {
-      refDescriptor.push(item.descriptor);
+      refDescriptor.push({ descriptor: item.descriptor, name: item.name });
+
       console.log(`Reference Image Descriptor ${i}: ${item.name} added`);
     }
   });
   if (refArr.length === 1) {
     oneReferenceToManyQuery(queryArr, refDescriptor);
   } else {
-    // const totalReferenceImg = await computeEuclideanDistance(refDescriptor);
     const queryDescriptor = queryArr.map((item) => {
-      if (item.descriptor) return item.descriptor;
+      if (item.descriptor) {
+        return { descriptor: item.descriptor, name: item.name };
+      }
     });
-    // const totalQueryImg = await computeEuclideanDistance(queryDescriptor);
-    // const length = refDescriptor.length + queryDescriptor.length;
-    // const distance = compareDistance(distance);
 
-    const distance = await computeEuclideanDistance(
-      refDescriptor,
-      queryDescriptor
-    );
-
-    compareDistance(distance);
+    await computeEuclideanDistance(refDescriptor, queryDescriptor);
   }
 };
 
@@ -157,41 +152,31 @@ const compareDistance = (distance, i) => {
 };
 
 const computeEuclideanDistance = async (arr, arr2) => {
-  if (arr.length !== arr2.length) return;
-  let total = 0;
+  console.log(arr);
+  console.log(arr2);
 
-  for (let i = 0; i < arr.length; i++) {
-    total += await faceapi.euclideanDistance(arr[i], arr2[i]);
-  }
-  total / arr.length;
-  // let run = 0;
-  // let distance;
-  // let total = 0;
-  // for (let i = 0; i < arr.length; i++) {
-  //   if (i === 0) {
-  //     console.log(i);
-  //     distance = faceapi.euclideanDistance(arr[i], arr[i + 1]);
-  //     run++;
-  //     total = distance;
-  //     console.log(total);
-  //   } else if (i < arr.length - 2) {
-  //     console.log(i);
-  //     const dis = faceapi.euclideanDistance(arr[i + 1], arr[i + 2]);
-  //     run++;
-  //     total = total + dis / 2;
-  //     console.log(total);
-  //   } else if (i === arr.length - 1) {
-  //     console.log(i);
-  //     const dis = faceapi.euclideanDistance(arr[i - 1], arr[i]);
-  //     run++;
-  //     total = total + dis / 2;
-  //     console.log(total);
-  //   }
-  // }
-  // console.log(run);
-  // total = total / run;
-  // console.log(`Total Euclidean distance of array 1: ${total}`);
-  return total;
+  arr.map((item, i) => {
+    arr2.map((val, j) => {
+      const distance = faceapi.euclideanDistance(
+        item.descriptor,
+        val.descriptor
+      );
+
+      if (distance <= 0.43) {
+        console.log(
+          `Reference ${i + i} ${item.name}: is the same person with query ${
+            j + 1
+          } ${val.name} , with the distance of ${distance}`
+        );
+      } else {
+        console.log(
+          `Reference ${i + 1} ${item.name}: is NOT the same person with query ${
+            j + 1
+          } ${val.name} , with the distance of ${distance}`
+        );
+      }
+    });
+  });
 };
 
 const compareImage = async () => {
