@@ -6,8 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CNN Confusion Matrix</title>
     <link rel="stylesheet" href="index.css" />
-    <script defer src="faceApi/face-api.js"></script>
-    <script defer src="faceApi/face-api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.3"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> -->
+    <script src="faceApi/face-api.js"></script>
+    <script src="faceApi/face-api.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
     <script type="module" src="index.js"></script>
   </head>
   <body>
@@ -36,6 +40,16 @@
           id="diff__person__checkbox"
         />
         <label for="diff__person">Different references different query</label>
+      </div>
+    </div>
+    <div class="container checkboxes">
+      <div class="container">
+        <input type="checkbox" name="face-api-js" id="face__api__js" checked />
+        <label for="face-api-js">Face Api.js Algorithm</label>
+      </div>
+      <div class="container">
+        <input type="checkbox" name="viola-jones-js" id="knn__classifier__js" />
+        <label for="viola-jones-js">Knn Classifier</label>
       </div>
     </div>
   </body>
