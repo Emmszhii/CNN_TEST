@@ -6,13 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CNN Confusion Matrix</title>
     <link rel="stylesheet" href="index.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.3"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> -->
-    <script src="faceApi/face-api.js"></script>
-    <script src="faceApi/face-api.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
-    <script type="module" src="index.js"></script>
   </head>
   <body>
     <div class="container">
@@ -22,6 +16,9 @@
     <div class="container">
       <label for="query">Query image</label>
       <input type="file" name="query" id="get__files" multiple />
+    </div>
+    <div class="container">
+      <button id="knnBtn" hidden>Classify using KNN</button>
     </div>
     <div class="container checkboxes">
       <div class="container">
@@ -52,5 +49,12 @@
         <label for="viola-jones-js">Knn Classifier</label>
       </div>
     </div>
+    <script src="faceApi/face-api.js"></script>
+    <script src="faceApi/face-api.min.js"></script>
+    <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+    <script src="index.js"></script>
   </body>
 </html>

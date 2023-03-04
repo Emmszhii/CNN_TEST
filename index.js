@@ -1,15 +1,24 @@
-const onePersonCheckbox = document.getElementById('one__person__checkbox');
-const diffPersonCheckbox = document.getElementById('diff__person__checkbox');
-const cnnCheckbox = document.getElementById('face__api__js');
-const knnCheckbox = document.getElementById('knn__classifier__js');
+const onePersonCheckbox = document.getElementById("one__person__checkbox");
+const diffPersonCheckbox = document.getElementById("diff__person__checkbox");
+const cnnCheckbox = document.getElementById("face__api__js");
+const knnCheckbox = document.getElementById("knn__classifier__js");
+const referenceInput = document.getElementById("get__reference");
+const queryInput = document.getElementById("get__files");
+const knnBtn = document.getElementById("knnBtn");
+
 const options = new faceapi.TinyFaceDetectorOptions({
   inputSize: 128,
   scoreThreshold: 0.5,
 });
 
 let classifierKnn;
+let knnClassifier;
 let mobilenetModule;
 let tinyFaceApiNet;
+const split = 0.8;
+let numOfTraining;
+let numOfTesting;
+let featureExtractor;
 const referenceFile = [];
 const queryFiles = [];
 const referenceDescriptor = [];
@@ -42,39 +51,63 @@ const getQueryFiles = async (event) => {
     await setQueryDescriptor();
     await diffPersonHandler();
   } else if (knnCheckbox.checked && onePersonCheckbox.checked) {
-    if (classifierKnn.getClassifierDataset()) classifierKnn.clearAllClasses();
+    // if (classifierKnn.getClassifierDataset()) classifierKnn.clearAllClasses();
     await knnClassifierHandler();
   } else {
     console.log(`Please select a checkbox`);
   }
 };
 
+const imgToDom = (files) => {
+  files.map((file) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.id = file.name;
+    document.body.append(img);
+  });
+};
+
+const knnTrainImg = () => {
+  const ref = referenceFile;
+  for (let i = 0; i < ref.length; i++) {
+    const folderName = ref[i].webkitRelativePath.split("/")[1];
+    const image = document.getElementById(ref[i].name);
+    imgTrainOnload(image, folderName);
+  }
+};
+
+const imgTrainOnload = (img, folderName) => {
+  img.addEventListener("load", () => {
+    const features = featureExtractor.infer(img);
+    if (!features) {
+      console.log("Face not detected");
+    } else {
+      console.log(
+        `Features of ${folderName} of file name: ${img.id} is being added`
+      );
+      knnClassifier.addExample(features, folderName);
+    }
+  });
+};
+
+const knnTestImg = async () => {
+  console.log(`run`);
+  const query = queryFiles;
+
+  for (let i = 0; i < query.length; i++) {
+    const image = document.getElementById(query[i].name);
+    const features = featureExtractor.infer(image);
+    const predict = await knnClassifier.classify(features);
+    console.log(predict);
+  }
+};
+
 const knnClassifierHandler = async () => {
-  referenceFile.map(async (file, i) => {
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.id = file.name;
-    document.body.append(img);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, img.width, img.height);
-    const newImg = tf.browser.fromPixels(canvas);
-    const logits = mobilenetModule.infer(newImg, true);
-    classifierKnn.addExample(logits, file.name);
-  });
-  queryFiles.map(async (file, i) => {
-    const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.id = file.name;
-    document.body.append(img);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, img.width, img.height);
-    const newImg = tf.browser.fromPixels(canvas);
-    const x = mobilenetModule.infer(newImg, true);
-    const result = await classifierKnn.predictClass(x);
-    console.log(result);
-  });
+  imgToDom(referenceFile);
+  imgToDom(queryFiles);
+  knnTrainImg();
+
+  knnBtn.addEventListener("click", knnTestImg);
 };
 
 const diffPersonHandler = async () => {
@@ -184,27 +217,22 @@ const onePersonImageHandler = async () => {
   }
 };
 
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener("DOMContentLoaded", async () => {
   Promise.all([
-    faceapi.nets.faceRecognitionNet.loadFromUri('./models'),
-    faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
-    faceapi.nets.faceLandmark68TinyNet.loadFromUri('./models'),
-    (classifierKnn = knnClassifier.create()),
-    (tinyFaceApiNet = new faceapi.FaceLandmark68TinyNet()),
-    (mobilenetModule = await mobilenet.load()),
+    faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
+    faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
+    faceapi.nets.faceLandmark68TinyNet.loadFromUri("./models"),
+    (knnClassifier = ml5.KNNClassifier()),
   ]).then(async () => {
+    featureExtractor = ml5.featureExtractor("MobileNet");
+    console.log(knnClassifier);
+    console.log(featureExtractor);
     document
-      .getElementById('get__reference')
-      .addEventListener('change', getReferenceFiles);
+      .getElementById("get__reference")
+      .addEventListener("change", getReferenceFiles);
     document
-      .getElementById('get__files')
-      .addEventListener('change', getQueryFiles);
-    console.log(classifierKnn);
-    await tinyFaceApiNet.load(
-      'https://hpssjellis.github.io/beginner-tensorflowjs-examples-in-javascript/advanced-keras/face/models/face_landmark_68_tiny_model-weights_manifest.json'
-    );
-    console.log(tinyFaceApiNet);
-    console.log(mobilenetModule);
+      .getElementById("get__files")
+      .addEventListener("change", getQueryFiles);
   });
 });
 
@@ -223,12 +251,16 @@ const algorithmCheckboxes = (e) => {
   if (!btn.checked) return;
   if (btn === cnnCheckbox) {
     knnCheckbox.checked = false;
+    referenceInput.webkitdirectory = false;
+    knnBtn.hidden = true;
   } else {
     cnnCheckbox.checked = false;
+    referenceInput.webkitdirectory = true;
+    knnBtn.hidden = false;
   }
 };
 
-onePersonCheckbox.addEventListener('click', checkBoxes);
-diffPersonCheckbox.addEventListener('click', checkBoxes);
-cnnCheckbox.addEventListener('click', algorithmCheckboxes);
-knnCheckbox.addEventListener('click', algorithmCheckboxes);
+onePersonCheckbox.addEventListener("click", checkBoxes);
+diffPersonCheckbox.addEventListener("click", checkBoxes);
+cnnCheckbox.addEventListener("click", algorithmCheckboxes);
+knnCheckbox.addEventListener("click", algorithmCheckboxes);
