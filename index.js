@@ -11,6 +11,7 @@ const options = new faceapi.TinyFaceDetectorOptions({
   scoreThreshold: 0.5,
 });
 
+let dnn;
 let classifierKnn;
 let knnClassifier;
 let mobilenetModule;
@@ -224,7 +225,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
     faceapi.nets.faceLandmark68TinyNet.loadFromUri("./models"),
     (knnClassifier = ml5.KNNClassifier()),
+    (dnn = await WebDNN.load("./dnn/")),
   ]).then(async () => {
+    console.log(dnn);
     featureExtractor = ml5.featureExtractor("MobileNet");
     console.log(knnClassifier);
     console.log(featureExtractor);
@@ -247,6 +250,11 @@ const checkBoxes = (e) => {
   }
 };
 
+const deleteImg = () => {
+  const images = document.querySelectorAll("img");
+  images.forEach((img) => img.remove());
+};
+
 const algorithmCheckboxes = (e) => {
   const btn = e.currentTarget;
   if (!btn.checked) return;
@@ -254,6 +262,7 @@ const algorithmCheckboxes = (e) => {
     knnCheckbox.checked = false;
     referenceInput.webkitdirectory = false;
     knnBtn.hidden = true;
+    deleteImg();
   } else {
     cnnCheckbox.checked = false;
     referenceInput.webkitdirectory = true;
