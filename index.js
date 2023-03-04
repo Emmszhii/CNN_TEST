@@ -98,6 +98,7 @@ const knnTestImg = async () => {
     const image = document.getElementById(query[i].name);
     const features = featureExtractor.infer(image);
     const predict = await knnClassifier.classify(features);
+    console.log(`Result of ${query[i].name}`);
     console.log(predict);
   }
 };
