@@ -2,6 +2,7 @@ const onePersonCheckbox = document.getElementById("one__person__checkbox");
 const diffPersonCheckbox = document.getElementById("diff__person__checkbox");
 const cnnCheckbox = document.getElementById("face__api__js");
 const knnCheckbox = document.getElementById("knn__classifier__js");
+const dnnCheckbox = document.getElementById("dnn__js");
 const referenceInput = document.getElementById("get__reference");
 const queryInput = document.getElementById("get__files");
 const knnBtn = document.getElementById("knnBtn");
@@ -12,6 +13,7 @@ const options = new faceapi.TinyFaceDetectorOptions({
 });
 
 let dnn;
+let output;
 let classifierKnn;
 let knnClassifier;
 let mobilenetModule;
@@ -28,7 +30,7 @@ const distanceThreshold = 0.43;
 
 const getReferenceFiles = (event) => {
   const file = event.target.files;
-  if (!file) return;
+  if (!file) return console.log("No file detected please try again!");
   referenceFile.length = 0;
   referenceDescriptor.length = 0;
   for (let i = 0; i < file.length; i++) {
@@ -37,12 +39,12 @@ const getReferenceFiles = (event) => {
 };
 
 const getQueryFiles = async (event) => {
-  const fileList = event.target.files;
-  if (!fileList) return;
+  const file = event.target.files;
+  if (!file) return console.log("No file detected please try again!");
   queryFiles.length = 0;
   queryDescriptor.length = 0;
-  for (let i = 0; i < fileList.length; i++) {
-    queryFiles.push(fileList[i]);
+  for (let i = 0; i < file.length; i++) {
+    queryFiles.push(file[i]);
   }
 
   if (cnnCheckbox.checked && onePersonCheckbox.checked) {
@@ -51,11 +53,102 @@ const getQueryFiles = async (event) => {
     await setRefDescriptor();
     await setQueryDescriptor();
     await diffPersonHandler();
-  } else if (knnCheckbox.checked && onePersonCheckbox.checked) {
-    // if (classifierKnn.getClassifierDataset()) classifierKnn.clearAllClasses();
+  } else if (knnCheckbox.checked) {
     await knnClassifierHandler();
+  } else if (dnnCheckbox.checked) {
+    dnnAlgorithmHandler();
   } else {
     console.log(`Please select a checkbox`);
+  }
+};
+
+const dnnAlgorithmHandler = async () => {
+  console.log(`run`);
+  try {
+    dnnReferenceFiles();
+  } catch (e) {
+    console.log(e.msg);
+  }
+};
+
+const dnnReferenceFiles = async () => {
+  const files = referenceFile;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const num = i + 1;
+      const newImg = new Image();
+      newImg.src = URL.createObjectURL(files[i]);
+      newImg.id = files[i].name;
+      const detection = await faceapi
+        .detectSingleFace(newImg, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection > 0) {
+        console.log(
+          `reference ${num}: ${newImg.id} too many faces must only consist 1`
+        );
+      } else if (!detection) {
+        console.log(`reference ${num}: ${newImg.id} face not detected`);
+      } else {
+        console.log(`reference ${num}: ${newImg.id} `);
+        console.log(detection);
+        referenceDescriptor.push({
+          name: referenceFile[i].name,
+          descriptor: detection.descriptor,
+        });
+      }
+    }
+  } catch (e) {
+    console.log(e.message);
+  } finally {
+    dnnQueryFiles();
+  }
+};
+
+const dnnQueryFiles = async () => {
+  const files = queryFiles;
+  console.log(files);
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const num = i + 1;
+      const newImg = new Image();
+      newImg.src = URL.createObjectURL(files[i]);
+      newImg.id = files[i].name;
+      const detection = await faceapi
+        .detectSingleFace(newImg, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detection > 0) {
+        console.log(
+          `query ${num}: ${newImg.id} too many faces must only consist 1`
+        );
+      } else if (!detection) {
+        console.log(`query ${num}: ${newImg.id} face not detected`);
+      } else {
+        console.log(`query ${num}: ${newImg.id} `);
+        console.log(detection);
+        queryDescriptor.push({
+          name: files[i].name,
+          descriptor: detection.descriptor,
+        });
+      }
+    }
+  } catch (e) {
+    console.log(e.message);
+  } finally {
+    console.log(referenceDescriptor);
+    console.log(queryDescriptor);
+    dnnMatchFace();
+  }
+};
+
+const dnnMatchFace = () => {
+  try {
+    onePersonCompare();
+  } catch (e) {
+    console.log(e.message);
   }
 };
 
@@ -144,20 +237,23 @@ const setRefDescriptor = async () => {
       .withFaceLandmarks(true)
       .withFaceDescriptor();
 
-    if (detection > 0)
-      return console.log(`There are too many faces. Please put only one`);
-    if (!detection)
+    if (detection > 0) {
+      console.log(`There are too many faces. Please put only one`);
+    } else if (!detection) {
       return console.log(`There are no face detected in the image`);
-    console.log(
-      `Reference Image ${referenceFile[i].name} ${i + 1} face descriptor added`
-    );
-    console.log(detection);
-    console.log(detection.descriptor);
-    console.log(detection.descriptor.toString());
-    referenceDescriptor.push({
-      name: referenceFile[i].name,
-      descriptor: detection.descriptor,
-    });
+    } else {
+      console.log(
+        `Reference Image ${referenceFile[i].name} ${
+          i + 1
+        } face descriptor added`
+      );
+      console.log(detection);
+      console.log(detection.descriptor.toString());
+      referenceDescriptor.push({
+        name: referenceFile[i].name,
+        descriptor: detection.descriptor,
+      });
+    }
   }
 };
 const setQueryDescriptor = async () => {
@@ -170,21 +266,21 @@ const setQueryDescriptor = async () => {
       .withFaceLandmarks(true)
       .withFaceDescriptor();
 
-    if (detection > 0)
-      return console.log(`There are too many faces. Please put only one`);
-    if (!detection)
-      return console.log(`There are no face detected in the image`);
-
-    console.log(detection);
-    console.log(detection.descriptor);
-    console.log(detection.descriptor.toString());
-    console.log(
-      `Query Image ${queryFiles[i].name} ${i + 1} face descriptor added`
-    );
-    queryDescriptor.push({
-      name: queryFiles[i].name,
-      descriptor: detection.descriptor,
-    });
+    if (detection > 0) {
+      console.log(`There are too many faces. Please put only one`);
+    } else if (!detection) {
+      console.log(`There are no face detected in the image`);
+    } else {
+      console.log(detection);
+      console.log(detection.descriptor.toString());
+      console.log(
+        `Query Image ${queryFiles[i].name} ${i + 1} face descriptor added`
+      );
+      queryDescriptor.push({
+        name: queryFiles[i].name,
+        descriptor: detection.descriptor,
+      });
+    }
   }
 };
 
@@ -221,13 +317,18 @@ const onePersonImageHandler = async () => {
 
 window.addEventListener("DOMContentLoaded", async () => {
   Promise.all([
-    faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
+    // CNN
     faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
     faceapi.nets.faceLandmark68TinyNet.loadFromUri("./models"),
+    // KNN
     (knnClassifier = ml5.KNNClassifier()),
     (dnn = await WebDNN.load("./dnn/")),
+    // DNN
+    faceapi.nets.ssdMobilenetv1.loadFromUri("./models"),
+    faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
+    // classification for face recognition for CNN and DNN
+    faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
   ]).then(async () => {
-    console.log(dnn);
     featureExtractor = ml5.featureExtractor("MobileNet");
     console.log(knnClassifier);
     console.log(featureExtractor);
@@ -260,17 +361,25 @@ const algorithmCheckboxes = (e) => {
   if (!btn.checked) return;
   if (btn === cnnCheckbox) {
     knnCheckbox.checked = false;
+    dnnCheckbox.checked = false;
     referenceInput.webkitdirectory = false;
     knnBtn.hidden = true;
-    deleteImg();
-  } else {
+  } else if (btn === knnCheckbox) {
+    dnnCheckbox.checked = false;
     cnnCheckbox.checked = false;
     referenceInput.webkitdirectory = true;
     knnBtn.hidden = false;
+  } else if (btn === dnnCheckbox) {
+    cnnCheckbox.checked = false;
+    knnCheckbox.checked = false;
+    referenceInput.webkitdirectory = false;
+    knnBtn.hidden = true;
   }
+  deleteImg();
 };
 
 onePersonCheckbox.addEventListener("click", checkBoxes);
 diffPersonCheckbox.addEventListener("click", checkBoxes);
 cnnCheckbox.addEventListener("click", algorithmCheckboxes);
 knnCheckbox.addEventListener("click", algorithmCheckboxes);
+dnnCheckbox.addEventListener("click", algorithmCheckboxes);
