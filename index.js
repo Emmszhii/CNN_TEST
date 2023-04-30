@@ -18,15 +18,31 @@ let classifierKnn;
 let knnClassifier;
 let mobilenetModule;
 let tinyFaceApiNet;
-const split = 0.8;
 let numOfTraining;
 let numOfTesting;
 let featureExtractor;
+const split = 0.8;
+const distThreshold = 0.43;
+
 const referenceFile = [];
 const queryFiles = [];
 const referenceDescriptor = [];
 const queryDescriptor = [];
 const distanceThreshold = 0.43;
+
+//
+let truePositive = 0,
+  trueNegative = 0,
+  falsePositive = 0,
+  falseNegative = 0;
+// RESET
+const resetMetrics = () => {
+  truePositive = 0;
+  trueNegative = 0;
+  falseNegative = 0;
+  falsePositive = 0;
+};
+// ACCURACY
 
 const getReferenceFiles = (event) => {
   const file = event.target.files;
@@ -47,18 +63,142 @@ const getQueryFiles = async (event) => {
     queryFiles.push(file[i]);
   }
 
-  if (cnnCheckbox.checked && onePersonCheckbox.checked) {
-    await onePersonImageHandler();
-  } else if (cnnCheckbox.checked && diffPersonCheckbox.checked) {
-    await setRefDescriptor();
-    await setQueryDescriptor();
-    await diffPersonHandler();
+  // await setRefDescriptor();
+  // await setQueryDescriptor();
+
+  if (cnnCheckbox.checked) {
+    await cnnAlgorithm();
   } else if (knnCheckbox.checked) {
     await knnClassifierHandler();
   } else if (dnnCheckbox.checked) {
     dnnAlgorithmHandler();
   } else {
     console.log(`Please select a checkbox`);
+  }
+};
+
+const cnnAlgorithm = async () => {
+  try {
+    const persons = [];
+    const options = new faceapi.TinyFaceDetectorOptions();
+    for (let i = 0; i < referenceFile.length; i++) {
+      const folderName = referenceFile[i].webkitRelativePath.split("/")[0];
+      const imgDir = URL.createObjectURL(referenceFile[i]);
+      const newImg = new Image();
+      newImg.src = imgDir;
+      console.log(`Img ${i + 1}: `, newImg);
+      const descriptor = await faceapi
+        .detectSingleFace(newImg, options)
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+      if (!descriptor) {
+        console.log(`No faces found in this image ${i + 1} : ${imgDir} `);
+      }
+      const person = {
+        name: folderName,
+        img: [imgDir],
+        descriptor: [descriptor?.descriptor],
+        matrix: { tp: 0, tn: 0, fn: 0, fp: 0 },
+      };
+      const isFound = persons.some((item) => item.name === folderName);
+      if (isFound) {
+        persons.forEach(({ name }, i) => {
+          if (name === folderName) {
+            persons[i].img.push(imgDir);
+            if (descriptor) {
+              persons[i].descriptor.push(descriptor?.descriptor);
+            }
+            // else {
+            //   persons[i].matrix.fn++;
+            // }
+          }
+        });
+      } else {
+        persons.push(person);
+      }
+    }
+    console.log(persons);
+
+    for (const person of persons) {
+      const labeledDescriptors = new faceapi.LabeledFaceDescriptors(
+        person.name,
+        person.descriptor
+      );
+      console.log(labeledDescriptors);
+      for (const person2 of queryFiles) {
+        const personName = person2.webkitRelativePath
+          .split("/")[1]
+          .split("_")[0];
+
+        const fullName =
+          personName +
+          "_" +
+          person2.webkitRelativePath.split("/")[1].split("_")[1];
+
+        console.log(fullName);
+        const query = URL.createObjectURL(person2);
+        const queryImg = new Image();
+        queryImg.src = query;
+        const detection = await faceapi
+          .detectSingleFace(queryImg, options)
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        if (detection) {
+          const faceMatcher = new faceapi.FaceMatcher(
+            [labeledDescriptors],
+            distThreshold
+          );
+          const match = faceMatcher.findBestMatch(detection.descriptor);
+          const dist = match._distance;
+          // console.log(person2);
+          console.log(dist, distThreshold, dist <= distThreshold);
+
+          if (dist < 0.6) {
+            if (person.name === fullName) {
+              person.matrix.tp++;
+              // console.log(`true postive : ${fullName}`);
+            } else {
+              // console.log(`false postive : ${fullName}`);
+              person.matrix.fp++;
+            }
+          } else {
+            if (person.name === fullName) {
+              // console.log(`false negative : ${fullName}`);
+              person.matrix.fn++;
+            } else {
+              // console.log(`true negative : ${fullName}`);
+              person.matrix.tn++;
+            }
+          }
+          // console.log(`${fullName}`, person.matrix);
+        } else {
+          // console.log(fullName, person.matrix);
+          person.matrix.fn++;
+        }
+        console.log(`${fullName}`, person.matrix);
+        // console.log(person.matrix);
+      }
+      resetMetrics();
+    }
+
+    // referenceFile.map((person, i) => {
+    //   console.log(i);
+    //   const folderName = person.webkitRelativePath.split("/")[1];
+    //   if (persons.name === folderName) {
+    //     console.log(`run`);
+    //   } else {
+    //   }
+    // });
+
+    // for (let i = 0; i < referenceFile.length; i++) {
+    //   const person = { name: `Person${i + 1}`, images: [] };
+    //   for (let j = 0; j < referenceFile.length; j++) {
+    //     person.images.push(`./${referenceFile[j].webkitRelativePath}`);
+    //   }
+    //   console.log(person);
+    // }
+  } catch (e) {
+    console.log(e);
   }
 };
 
@@ -302,18 +442,24 @@ const onePersonCompare = async () => {
       `the reference is ${bestMatch.toString()} to query ${i + 1} 
       ${queryDescriptor[i].name}`
     );
+    const dist = bestMatch._distance;
+    console.log(dist);
+    if (dist <= distanceThreshold) {
+    } else {
+    }
   }
 };
 
-const onePersonImageHandler = async () => {
-  try {
-    await setRefDescriptor();
-    await setQueryDescriptor();
-    await onePersonCompare();
-  } catch (e) {
-    console.log(e);
-  }
-};
+// calculate the TP, TN, FP, and FN for each person
+// const stats = labeledDescriptors.map((label, i) => {
+//   const tp = results.slice(i * 10, (i + 1) * 10).filter((result) => result.label === label.label).length;
+//   const fp = results.slice(i * 10, (i + 1) * 10).filter((result) => result.label !== label.label).length;
+//   const fn = 10 - tp;
+//   const tn = results.length - tp - fp - fn;
+//   return { label: label.label, tp, tn, fp, fn };
+// });
+
+// console.log(stats);
 
 window.addEventListener("DOMContentLoaded", async () => {
   Promise.all([
@@ -378,8 +524,8 @@ const algorithmCheckboxes = (e) => {
   deleteImg();
 };
 
-onePersonCheckbox.addEventListener("click", checkBoxes);
-diffPersonCheckbox.addEventListener("click", checkBoxes);
+// onePersonCheckbox.addEventListener("click", checkBoxes);
+// diffPersonCheckbox.addEventListener("click", checkBoxes);
 cnnCheckbox.addEventListener("click", algorithmCheckboxes);
 knnCheckbox.addEventListener("click", algorithmCheckboxes);
 dnnCheckbox.addEventListener("click", algorithmCheckboxes);
