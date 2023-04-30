@@ -1,5 +1,3 @@
-// const onePersonCheckbox = document.getElementById("one__person__checkbox");
-// const diffPersonCheckbox = document.getElementById("diff__person__checkbox");
 const cnnCheckbox = document.getElementById("face__api__js");
 const knnCheckbox = document.getElementById("knn__classifier__js");
 const dnnCheckbox = document.getElementById("dnn__js");
@@ -63,9 +61,6 @@ const getQueryFiles = async (event) => {
     queryFiles.push(file[i]);
   }
 
-  // await setRefDescriptor();
-  // await setQueryDescriptor();
-
   if (cnnCheckbox.checked) {
     await cnnAlgorithm();
   } else if (knnCheckbox.checked) {
@@ -108,9 +103,6 @@ const cnnAlgorithm = async () => {
             if (descriptor) {
               persons[i].descriptor.push(descriptor?.descriptor);
             }
-            // else {
-            //   persons[i].matrix.fn++;
-            // }
           }
         });
       } else {
@@ -150,53 +142,37 @@ const cnnAlgorithm = async () => {
           );
           const match = faceMatcher.findBestMatch(detection.descriptor);
           const dist = match._distance;
-          // console.log(person2);
+       
           console.log(dist, distThreshold, dist <= distThreshold);
 
           if (dist < 0.6) {
             if (person.name === fullName) {
               person.matrix.tp++;
-              // console.log(`true postive : ${fullName}`);
+           
             } else {
-              // console.log(`false postive : ${fullName}`);
+             
               person.matrix.fp++;
             }
           } else {
             if (person.name === fullName) {
-              // console.log(`false negative : ${fullName}`);
+             
               person.matrix.fn++;
             } else {
-              // console.log(`true negative : ${fullName}`);
+             
               person.matrix.tn++;
             }
           }
-          // console.log(`${fullName}`, person.matrix);
+         
         } else {
-          // console.log(fullName, person.matrix);
+        
           person.matrix.fn++;
         }
         console.log(`${fullName}`, person.matrix);
-        // console.log(person.matrix);
+       
       }
       resetMetrics();
     }
 
-    // referenceFile.map((person, i) => {
-    //   console.log(i);
-    //   const folderName = person.webkitRelativePath.split("/")[1];
-    //   if (persons.name === folderName) {
-    //     console.log(`run`);
-    //   } else {
-    //   }
-    // });
-
-    // for (let i = 0; i < referenceFile.length; i++) {
-    //   const person = { name: `Person${i + 1}`, images: [] };
-    //   for (let j = 0; j < referenceFile.length; j++) {
-    //     person.images.push(`./${referenceFile[j].webkitRelativePath}`);
-    //   }
-    //   console.log(person);
-    // }
   } catch (e) {
     console.log(e);
   }
@@ -450,16 +426,7 @@ const onePersonCompare = async () => {
   }
 };
 
-// calculate the TP, TN, FP, and FN for each person
-// const stats = labeledDescriptors.map((label, i) => {
-//   const tp = results.slice(i * 10, (i + 1) * 10).filter((result) => result.label === label.label).length;
-//   const fp = results.slice(i * 10, (i + 1) * 10).filter((result) => result.label !== label.label).length;
-//   const fn = 10 - tp;
-//   const tn = results.length - tp - fp - fn;
-//   return { label: label.label, tp, tn, fp, fn };
-// });
 
-// console.log(stats);
 
 window.addEventListener("DOMContentLoaded", async () => {
   Promise.all([
@@ -487,15 +454,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// const checkBoxes = (e) => {
-//   const btn = e.currentTarget;
-//   if (!btn.checked) return;
-//   if (btn === onePersonCheckbox) {
-//     diffPersonCheckbox.checked = false;
-//   } else {
-//     onePersonCheckbox.checked = false;
-//   }
-// };
 
 const deleteImg = () => {
   const images = document.querySelectorAll("img");
@@ -524,8 +482,7 @@ const algorithmCheckboxes = (e) => {
   deleteImg();
 };
 
-// onePersonCheckbox.addEventListener("click", checkBoxes);
-// diffPersonCheckbox.addEventListener("click", checkBoxes);
+
 cnnCheckbox.addEventListener("click", algorithmCheckboxes);
 knnCheckbox.addEventListener("click", algorithmCheckboxes);
 dnnCheckbox.addEventListener("click", algorithmCheckboxes);
