@@ -143,7 +143,7 @@ const cnnAlgorithm = async () => {
           const match = faceMatcher.findBestMatch(detection.descriptor);
           const dist = match._distance;
        
-          console.log(dist, distThreshold, dist <= distThreshold);
+          console.log(dist);
 
           if (dist < 0.6) {
             if (person.name === fullName) {
