@@ -1,5 +1,5 @@
-const onePersonCheckbox = document.getElementById("one__person__checkbox");
-const diffPersonCheckbox = document.getElementById("diff__person__checkbox");
+// const onePersonCheckbox = document.getElementById("one__person__checkbox");
+// const diffPersonCheckbox = document.getElementById("diff__person__checkbox");
 const cnnCheckbox = document.getElementById("face__api__js");
 const knnCheckbox = document.getElementById("knn__classifier__js");
 const dnnCheckbox = document.getElementById("dnn__js");
@@ -487,15 +487,15 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-const checkBoxes = (e) => {
-  const btn = e.currentTarget;
-  if (!btn.checked) return;
-  if (btn === onePersonCheckbox) {
-    diffPersonCheckbox.checked = false;
-  } else {
-    onePersonCheckbox.checked = false;
-  }
-};
+// const checkBoxes = (e) => {
+//   const btn = e.currentTarget;
+//   if (!btn.checked) return;
+//   if (btn === onePersonCheckbox) {
+//     diffPersonCheckbox.checked = false;
+//   } else {
+//     onePersonCheckbox.checked = false;
+//   }
+// };
 
 const deleteImg = () => {
   const images = document.querySelectorAll("img");
