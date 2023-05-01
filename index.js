@@ -11,6 +11,7 @@ const options = new faceapi.TinyFaceDetectorOptions({
 });
 
 let dnn;
+let mtcnnDnn;
 let output;
 let classifierKnn;
 let knnClassifier;
@@ -171,12 +172,82 @@ const cnnAlgorithm = async () => {
 };
 
 const dnnAlgorithmHandler = async () => {
-  console.log(`run`);
-  try {
-    dnnReferenceFiles();
-  } catch (e) {
-    console.log(e.msg);
+  // dnnReferenceFiles();
+  const ref = referenceFile;
+  const persons = [];
+  for (let i = 0; i < ref.length; i++) {
+    const num = i + 1;
+    const refImg = new Image();
+    const name = ref[i].webkitRelativePath.split("/")[0];
+    const fullName = name.split("_")[0] + "_" + name.split("_")[1];
+    refImg.src = URL.createObjectURL(ref[i]);
+
+    const detection = await faceapi
+      .detectAllFaces(refImg)
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+
+    const isFound = persons.some((item) => item.fullName === fullName);
+    if (detection.length > 0) {
+      if (isFound) {
+        persons.forEach((item) => {
+          if (item.fullName === fullName) {
+            item.descriptors.push(detection[0].descriptor);
+          }
+        });
+      } else {
+        persons.push({
+          fullName: fullName,
+          descriptors: [detection[0].descriptor],
+          matrix: { tp: 0, tn: 0, fn: 0, fp: 0 },
+        });
+      }
+    }
+
+    console.log(`Person ${num} ${fullName} ` + detection[0].descriptor);
   }
+  for (const person of persons) {
+    const featureLabel = new faceapi.LabeledFaceDescriptors(
+      person.fullName,
+      person.descriptors
+    );
+    const faceMatcher = new faceapi.FaceMatcher([featureLabel], distThreshold);
+    console.log(faceMatcher);
+    for (const query of queryFiles) {
+      const queryImg = new Image();
+      queryImg.src = URL.createObjectURL(query);
+      const name = query.webkitRelativePath.split("/")[1];
+      const fullName = name.split("_")[0] + "_" + name.split("_")[1];
+
+      const detect = await faceapi
+        .detectSingleFace(queryImg)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (detect) {
+        const match = faceMatcher.findBestMatch(detect.descriptor);
+        const dist = match._distance;
+
+        console.log(`Query of ` + fullName, match);
+        if (dist < 0.6) {
+          if (person.fullName === fullName) {
+            person.matrix.tp++;
+          } else {
+            person.matrix.fp++;
+          }
+        } else {
+          if (person.fullName === fullName) {
+            person.matrix.fn++;
+          } else {
+            person.matrix.tn++;
+          }
+        }
+      }
+    }
+    console.log(person);
+    console.log(person.matrix);
+  }
+  console.log(persons);
 };
 
 const dnnReferenceFiles = async () => {
@@ -469,8 +540,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     (dnn = await WebDNN.load("./dnn/")),
     // DNN
     faceapi.nets.ssdMobilenetv1.loadFromUri("./models"),
-    faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
     // classification for face recognition for CNN and DNN
+    faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
     faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
   ]).then(async () => {
     featureExtractor = ml5.featureExtractor("MobileNet");
@@ -506,7 +577,7 @@ const algorithmCheckboxes = (e) => {
   } else if (btn === dnnCheckbox) {
     cnnCheckbox.checked = false;
     knnCheckbox.checked = false;
-    referenceInput.webkitdirectory = false;
+    // referenceInput.webkitdirectory = false;
     knnBtn.hidden = true;
   }
   deleteImg();
