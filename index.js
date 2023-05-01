@@ -142,37 +142,29 @@ const cnnAlgorithm = async () => {
           );
           const match = faceMatcher.findBestMatch(detection.descriptor);
           const dist = match._distance;
-       
+
           console.log(dist);
 
           if (dist < 0.6) {
             if (person.name === fullName) {
               person.matrix.tp++;
-           
             } else {
-             
               person.matrix.fp++;
             }
           } else {
             if (person.name === fullName) {
-             
               person.matrix.fn++;
             } else {
-             
               person.matrix.tn++;
             }
           }
-         
         } else {
-        
           person.matrix.fn++;
         }
         console.log(`${fullName}`, person.matrix);
-       
       }
       resetMetrics();
     }
-
   } catch (e) {
     console.log(e);
   }
@@ -301,16 +293,57 @@ const imgTrainOnload = (img, folderName) => {
 };
 
 const knnTestImg = async () => {
-  console.log(`run`);
   const query = queryFiles;
-
+  const personsMatrix = [];
   for (let i = 0; i < query.length; i++) {
     const image = document.getElementById(query[i].name);
+    const fullName =
+      query[i].name.split("_")[0] + "_" + query[i].name.split("_")[1];
+    const matrix = { tp: 0, tn: 0, fn: 0, fp: 0 };
     const features = featureExtractor.infer(image);
     const predict = await knnClassifier.classify(features);
-    console.log(`Result of ${query[i].name}`);
+    console.log(`Result of ${fullName} : file of ${query[i].name}`);
     console.log(predict);
+    const isFound = personsMatrix.some(
+      (person) => person.fullName === fullName
+    );
+    if (isFound) {
+      personsMatrix.forEach((item) => {
+        if (item.fullName === fullName) {
+          if (predict.label === fullName) {
+            if (predict.label === fullName) {
+              item.matrix.tp++;
+            } else {
+              item.matrix.fp++;
+            }
+          } else {
+            if (predict.label === fullName) {
+              item.matrix.fn++;
+            } else {
+              item.matrix.tn++;
+            }
+          }
+        }
+      });
+    } else {
+      if (predict.label === fullName) {
+        if (predict.label === fullName) {
+          matrix.tp++;
+        } else {
+          matrix.fp++;
+        }
+      } else {
+        if (predict.label === fullName) {
+          matrix.fn++;
+        } else {
+          matrix.tn++;
+        }
+      }
+      personsMatrix.push({ fullName: fullName, matrix });
+    }
+    console.log(personsMatrix);
   }
+  console.log(personsMatrix);
 };
 
 const knnClassifierHandler = async () => {
@@ -426,8 +459,6 @@ const onePersonCompare = async () => {
   }
 };
 
-
-
 window.addEventListener("DOMContentLoaded", async () => {
   Promise.all([
     // CNN
@@ -453,7 +484,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       .addEventListener("change", getQueryFiles);
   });
 });
-
 
 const deleteImg = () => {
   const images = document.querySelectorAll("img");
@@ -481,7 +511,6 @@ const algorithmCheckboxes = (e) => {
   }
   deleteImg();
 };
-
 
 cnnCheckbox.addEventListener("click", algorithmCheckboxes);
 knnCheckbox.addEventListener("click", algorithmCheckboxes);
